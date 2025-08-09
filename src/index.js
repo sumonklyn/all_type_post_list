@@ -41,6 +41,26 @@ registerBlockType('lp/latest-posts', {
             type: 'number',
             default: 3,
         },
+        scHedSwitch: {
+            type: 'boolean',
+            default: true,
+        },
+        scHedFntSize: {
+            type: 'number',
+            default: 30,
+        },
+        scHedFntColor: {
+            type: 'string',
+            default: '#ffffffff',
+        },
+        scHedText: {
+            type: 'string',
+            default: 'Latest Posts',
+        },
+        scHedAlign: {
+            type: 'string',
+            default: 'left',
+        },
 
     },
     edit: Edit,
