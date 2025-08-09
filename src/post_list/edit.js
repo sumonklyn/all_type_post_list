@@ -1,64 +1,29 @@
 import { useSelect } from '@wordpress/data';
 import { InspectorControls, MediaUpload, MediaUploadCheck } from '@wordpress/block-editor';
-import { PanelBody, RangeControl, ColorPicker, ToggleControl, Button, SelectControl } from '@wordpress/components';
-import './post_list.scss'; // Editor styles only
-import { useEntityRecords } from '@wordpress/core-data';
+import { PanelBody, RangeControl, ColorPicker, ToggleControl, Button, ButtonGroup, Icon, SelectControl,  __experimentalNumberControl as NumberControl,  ColorPalette, TextControl  } from '@wordpress/components';
+import { alignLeft, alignCenter, alignRight, alignJustify } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import { Fragment, useState, useEffect } from '@wordpress/element';
-function getExcerptFromContent(htmlContent, wordLimit = 50) {
-  // Remove HTML tags
-  const text = htmlContent.replace(/<[^>]+>/g, '');
-  // Trim to desired word count
-  return text.split(/\s+/).slice(0, wordLimit).join(' ') + '...';
-}
+import { useEntityRecords } from '@wordpress/core-data';
+import './post_list.scss'; // Editor styles only
+import Preview from './preview';
 
-
-const Edit = ({ attributes, setAttributes }) => {
-    const { postType, postsPerPage, totalPosts, bgColor, bgSwitch, bgImage, postStyle, columns } = attributes;
+function Edit({ attributes, setAttributes }) {
+    const { postType, postsPerPage, totalPosts, bgColor, bgSwitch, bgImage, postStyle, columns, scHedSwitch, scHedText, scHedAlign, scHedFntSize, scHedFntColor  } = attributes;
     const postTypes = useSelect((select) => {
         return select('core').getPostTypes({ per_page: -1 });
     }, []);
-    const [currentPage, setCurrentPage] = useState(1);
 
-    // Reset current page on settings change
+    const [currentPage, setCurrentPage] = useState(1);
+    const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
     useEffect(() => {
         setCurrentPage(1);
     }, [postsPerPage, totalPosts]);
 
-    // Fetch up to `totalPosts`
-    const {
-        records: allPosts,
-        hasResolved,
-    } = useEntityRecords('postType',  postType || 'post', {
+    const { records: allPosts, hasResolved } = useEntityRecords('postType', postType || 'post', {
         per_page: totalPosts,
         _embed: true,
     });
-
-    const totalFetched = allPosts?.length || 0;
-    const totalPages = Math.ceil(totalFetched / postsPerPage);
-    const paginatedPosts = allPosts?.slice(
-        (currentPage - 1) * postsPerPage,
-        currentPage * postsPerPage
-    ) || [];
-
-    const backgroundStyle = bgSwitch && bgImage
-        ? { backgroundImage: `url(${bgImage})`, backgroundSize: 'cover' }
-        : { background: bgColor };
-
-    const previewBoxStyle = bgSwitch && bgImage
-        ? {
-              backgroundImage: `url(${bgImage})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              height: '80px',
-              marginBottom: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontSize: '12px',
-          }
-        : { display: 'none' };
 
     return (
         <Fragment>
@@ -71,8 +36,7 @@ const Edit = ({ attributes, setAttributes }) => {
                         options={
                             postTypes
                                 ? postTypes
-                                    .filter((type) => type.viewable &&
-                      ![ 'page', 'media', 'attachment'].includes(type.slug))
+                                    .filter((type) => type.viewable && !['page', 'media', 'attachment'].includes(type.slug))
                                     .map((type) => ({
                                         label: type.name,
                                         value: type.slug,
@@ -84,8 +48,7 @@ const Edit = ({ attributes, setAttributes }) => {
                     <RangeControl
                         label={__('Total Posts to Load', 'lp')}
                         value={totalPosts}
-                        onChange={(val) => setAttributes({ totalPosts: val })
-                    }
+                        onChange={(val) => setAttributes({ totalPosts: val })}
                         min={1}
                         max={100}
                     />
@@ -121,8 +84,6 @@ const Edit = ({ attributes, setAttributes }) => {
                             />
                         </>
                     )}
-
-                    <div style={previewBoxStyle}>{__('Background Preview', 'lp')}</div>
 
                     {bgSwitch && (
                         <MediaUploadCheck>
@@ -174,192 +135,109 @@ const Edit = ({ attributes, setAttributes }) => {
                         />
                     )}
                 </PanelBody>
+
+                {/* Post Listing Layout */}
+                <PanelBody title={__('Section Layout', 'lp')} initialOpen={false}>
+                    <ToggleControl
+                        label="Show Section Heading"
+                        checked={scHedSwitch}
+                        onChange={(value) => setAttributes({ scHedSwitch: value })}
+                    />
+                    {scHedSwitch && (
+                    <PanelBody title={__('Heading Style', 'lp')} initialOpen={scHedSwitch}>
+                        {/* Text Input for Header */}
+                        <TextControl
+                            label={__('Header Text', 'lp')}
+                            value={scHedText}
+                            onChange={(val) => setAttributes({ scHedText: val })}
+                            placeholder={__('Enter header text…', 'lp')}
+                        />
+                        
+                        {/* Header Alignment */}
+                        <>
+                            <div style={{ marginBottom: '10px' }}>
+                                <h2 style={{ marginBottom: '5px' }}>Heading Alignment:</h2>
+                            </div>
+                            <ButtonGroup>
+                                <Button
+                                    isPressed={attributes.scHedAlign === 'left'}
+                                    onClick={() => setAttributes({ scHedAlign: 'left' })}
+                                >
+                                    <Icon icon={alignLeft} />
+                                </Button>
+                                <Button
+                                    isPressed={attributes.scHedAlign === 'center'}
+                                    onClick={() => setAttributes({ scHedAlign: 'center' })}
+                                >
+                                    <Icon icon={alignCenter} />
+                                </Button>
+                                <Button
+                                    isPressed={attributes.scHedAlign === 'right'}
+                                    onClick={() => setAttributes({ scHedAlign: 'right' })}
+                                >
+                                    <Icon icon={alignRight} />
+                                </Button>
+                                <Button
+                                    isPressed={attributes.scHedAlign === 'justify'}
+                                    onClick={() => setAttributes({ scHedAlign: 'justify' })}
+                                >
+                                    <Icon icon={alignJustify} />
+                                </Button>
+                            </ButtonGroup>
+                        </>
+                        <NumberControl
+                            label={__('Font Size', 'lp')}
+                            value={scHedFntSize}
+                            onChange={(value) => setAttributes({ scHedFntSize: value })}
+                            min={1}
+                            max={100}
+                            isShiftStepEnabled={ true }   // optional: enable shift+arrow for bigger steps
+                            shiftStep={ 1 } 
+                        />
+
+                        {/* New Color Picker */}
+                        <>
+                            <div style={{ marginBottom: '10px' }}>
+                                <h2 style={{ marginBottom: '5px' }}>Heading Color:</h2>
+                                <p style={{ fontSize: '12px', marginBottom: '5px' }}>
+                                    Select a section heading color for the block.
+                                </p>
+                            </div>                               
+                        
+                            <ColorPalette
+                                label={__('Text Color', 'lp')}      
+                                value={scHedFntColor}
+                                onChange={(color) => setAttributes({ scHedFntColor: color })} 
+                                colors={[
+                                    { name: 'Black', color: '#000000' },
+                                    { name: 'White', color: '#ffffff' },
+                                    { name: 'Red', color: '#ff0000' },
+                                    { name: 'Green', color: '#00ff00' },
+                                    { name: 'Blue', color: '#0000ff' },
+                                ]}  
+                                __experimentalIsExpanded={isColorPickerOpen}
+                                onFocus={() => setIsColorPickerOpen(true)}
+                                onBlur={() => setIsColorPickerOpen(false)}
+                                __experimentalOnChange={(color) => setAttributes({ scHedFntColor: color })}
+                                __experimentalIsFullWidth={true}
+                            />
+                        </>
+                    </PanelBody>
+                    )}
+                </PanelBody>
+
             </InspectorControls>
 
-            {/* Frontend Preview */}
-            <div className="lp-preview" style={backgroundStyle}>
-                <h3>{__('Latest Posts', 'lp')}</h3>
-
-                {/* List View */}
-                {postStyle === 'list' && (
-                    <ul className="lp-list">
-                        {paginatedPosts.map((post) => {
-                            const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
-                            return (
-                                <li key={post.id}>
-                                    {featuredImage && <img src={featuredImage} alt={post.title.rendered} />}
-                                    <div className="lp-post-content">
-                                        <h4>
-                                            <a href={post.link}>{post.title.rendered}</a>
-                                        </h4>
-                                        <div
-                                            className="excerpt"
-                                           dangerouslySetInnerHTML={{
-                                                __html:
-                                                post?.excerpt?.rendered?.trim()
-                                                    ? post.excerpt.rendered
-                                                    : getExcerptFromContent(post?.content?.rendered || '', 50),
-                                            }}
-                                        ></div>
-                                        <a href={post.link} className="lp-read-more">
-                                            {__('Read More', 'lp')}
-                                        </a>
-                                    </div>
-                                </li>
-                            );
-                        })}
-                    </ul>
-                )}
-
-                {/* Grid View */}
-                {postStyle === 'grid' && (
-                    <div
-                        className="lp-grid"
-                        style={{
-                            padding: '10px',
-                            display: 'grid',
-                            gap: '10px',
-                            gridTemplateColumns: `repeat(${columns || 3}, minmax(0, 1fr))`,
-                        }}
-                    >
-                        {paginatedPosts.map((post) => {
-                            const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
-                            return (
-                                <div key={post.id} id={post.id} className="lp-grid-item">
-                                    {featuredImage && <img src={featuredImage} alt={post.title.rendered} />}
-                                    <h4>{post.title.rendered}</h4>
-                                    <p
-                                        dangerouslySetInnerHTML={{
-                                            __html: post?.excerpt?.rendered?.trim()
-                                                ? post.excerpt.rendered
-                                                : getExcerptFromContent(post?.content?.rendered || '', 50),
-                                        }}
-                                    ></p>
-                                    <a href={post.link} className="lp-read-more">
-                                        {__('Read More', 'lp')}
-                                    </a>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-
-                {/* Masonry View */}
-                {postStyle === 'masonry' && (
-                    <div
-                        className="lp-masonry"
-                        style={{
-                            padding: '10px',
-                            columnCount: columns || 3,
-                            columnGap: '10px',
-                        }}
-                    >
-                        {paginatedPosts.map((post) => {
-                            const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
-                            return (
-                                <div key={post.id} className="lp-masonry-item">
-                                    {featuredImage && <img src={featuredImage} alt={post.title.rendered} />}
-                                    <h4>{post.title.rendered}</h4>
-                                    <p
-                                        dangerouslySetInnerHTML={{
-                                            __html: post?.excerpt?.rendered?.trim()
-                                                ? post.excerpt.rendered
-                                                : getExcerptFromContent(post?.content?.rendered || '', 50),
-                                        }}
-                                    ></p>
-                                    <a href={post.link} className="lp-read-more">
-                                        {__('Read More', 'lp')}
-                                    </a>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-
-                {/* Pagination */}
-                {hasResolved && totalFetched > postsPerPage && (
-                    <div className="lp-pagination">
-                        {(() => {
-                            const pages = [];
-                            const startPage = Math.max(1, currentPage - 2);
-                            const endPage = Math.min(totalPages, currentPage + 2);
-
-                            // Prev Button
-                            pages.push(
-                                <button
-                                    key="prev"
-                                    className="lp-page-button nav"
-                                    onClick={() => setCurrentPage(currentPage - 1)}
-                                    disabled={currentPage === 1}
-                                >
-                                    « Prev
-                                </button>
-                            );
-
-                            // First page & ellipsis
-                            if (startPage > 1) {
-                                pages.push(
-                                    <button
-                                        key={1}
-                                        className="lp-page-button"
-                                        onClick={() => setCurrentPage(1)}
-                                    >
-                                        1
-                                    </button>
-                                );
-                                if (startPage > 2) {
-                                    pages.push(<span key="start-ellipsis" className="lp-ellipsis">...</span>);
-                                }
-                            }
-
-                            // Middle page numbers
-                            for (let i = startPage; i <= endPage; i++) {
-                                pages.push(
-                                    <button
-                                        key={i}
-                                        className={`lp-page-button ${i === currentPage ? 'active' : ''}`}
-                                        onClick={() => setCurrentPage(i)}
-                                    >
-                                        {i}
-                                    </button>
-                                );
-                            }
-
-                            // Ellipsis & last page
-                            if (endPage < totalPages - 1) {
-                                pages.push(<span key="end-ellipsis" className="lp-ellipsis">...</span>);
-                            }
-                            if (endPage < totalPages) {
-                                pages.push(
-                                    <button
-                                        key={totalPages}
-                                        className="lp-page-button"
-                                        onClick={() => setCurrentPage(totalPages)}
-                                    >
-                                        {totalPages}
-                                    </button>
-                                );
-                            }
-
-                            // Next Button
-                            pages.push(
-                                <button
-                                    key="next"
-                                    className="lp-page-button nav"
-                                    onClick={() => setCurrentPage(currentPage + 1)}
-                                    disabled={currentPage === totalPages}
-                                >
-                                    Next »
-                                </button>
-                            );
-
-                            return pages;
-                        })()}
-                    </div>
-                )}
-            </div>
+            {/* Preview */}
+            <Preview
+                attributes={attributes}
+                allPosts={allPosts}
+                hasResolved={hasResolved}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+            />
         </Fragment>
     );
-};
+}
 
 export default Edit;
